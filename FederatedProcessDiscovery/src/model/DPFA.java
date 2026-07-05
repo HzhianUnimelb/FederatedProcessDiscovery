@@ -5,79 +5,37 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.swing.JFrame;
-
-import org.jgrapht.Graph;
-import org.jgrapht.ext.*;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
-
 import com.mxgraph.model.mxGeometry;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.view.mxGraph;
-
-import org.jgrapht.*;
-import org.graphstream.graph.*;
-import org.graphstream.graph.implementations.*;
 import org.apache.commons.math3.fraction.Fraction;
-import java.io.StringWriter;
-import java.io.Writer;
 
-public class DPFA extends PFA {
-
+public class DPFA extends Model {
+	
+	public Map<String, Fraction> finalProbabilities;
+    public Map<String, Map<String, Map<String, Fraction>>> transitionProbabilities;
+    protected Map<String, Fraction> initialProbabilities;
+    
 	public DPFA()
 	{
-		 
+		 super(MODELTYPE.DPFA);
+		 this.initialProbabilities = new HashMap<>();
+	        this.finalProbabilities = new HashMap<>();
+	        this.transitionProbabilities = new HashMap<>();
 	}
     public DPFA(Set<String> states, Set<String> alphabet) {
-        super(states, alphabet);
+ 
+        super(states, alphabet,MODELTYPE.DPFA);
+        this.initialProbabilities = new HashMap<>();
+        this.initialFrequencies = new HashMap<>();
+        this.finalProbabilities = new HashMap<>();
+        this.transitionProbabilities = new HashMap<>();
+        this.transitionFunction = new HashMap<>();
+        this.finalFrequencies = new HashMap<>();
+        
     }
 
-    public boolean isDPFA() {
-        // Check the conditions of a PFA
-        if (!checkPFA()) {
-            return false;
-        }
-
-        // Check if there is a unique initial state with probability 1
-        int count = 0;
-        for (Fraction prob : initialProbabilities.values()) {
-            if (prob.equals(new Fraction(1))) {
-                count++;
-            }
-        }
-        if (count != 1) {
-            return false;
-        }
-
-        // Check if there are no λ-transitions
-        for (Map<String, Map<String, Fraction>> symbolTransitions : transitionProbabilities.values()) {
-            if (symbolTransitions.containsKey("")) {
-                return false;
-            }
-        }
-
-        // Check if for each state and symbol, there is at most one transition with probability > 0
-        for (Map<String, Map<String, Fraction>> symbolTransitions : transitionProbabilities.values()) {
-            for (Map<String, Fraction> transitions : symbolTransitions.values()) {
-            	  int countTransitions = 0;
-                  for (Fraction prob : transitions.values()) {
-                      if (prob.compareTo(new Fraction(0)) < 0 || prob.compareTo(new Fraction(1)) > 0) {
-                          return false; // Probability is not between 0 and 1
-                      }
-                      if (prob.compareTo(new Fraction(0)) > 0) {
-                          countTransitions++;
-                      }
-                  }
-                  if (countTransitions > 1) {
-                      return false;
-                  }
-              }
-        }
-
-        return true;
-    }
     public static void show(DPFA dpfa) {
         mxGraph graph = new mxGraph();
         Object parent = graph.getDefaultParent();
@@ -128,13 +86,34 @@ public class DPFA extends PFA {
         }
         return null;
     }
-    public static DPFA convertFromDFFA(DFFA dffa) {
-        DPFA dpfa = new DPFA(dffa.getStates(), dffa.getAlphabet());
+    public static DFFA convertFromDFFA(DFFA dffa) {
 
+      
+    	dffa.setInitialProbability("",1);
+        for(String state:dffa.states)
+        {
+        	//dpfa.states.add(state);
+        	double total = dffa.calculatetotalFrequency(dffa, state);
+        	dffa.setFinalProbability(state, dffa.getFinalFrequency(state)/total);
+        	for(String symbol:dffa.alphabet)
+        	{
+        		
+        		//dpfa.alphabet.add(symbol);
+        		if(dffa.getTransitionFunction().containsKey(state+symbol))
+        		{
+        			String next = dffa.getTransitionFunction().get(state+symbol);
+        			double value = dffa.getTransitionFrequencies().get(state).get(symbol).get(next);
+        			dffa.setTransitionFrequency(state, symbol, next, value);
+        	
+        			dffa.setTransitionprobability(state, symbol, next, new Fraction((double)value/(double)total,4));
+        		}
+        	}
+        }
         // Calculate FREQ for each state
-        Map<String, Long> freq = new HashMap<>();
+       /* Map<String, Double> freq = new HashMap<>();
         for (String state : dffa.getStates()) {
-            freq.put(state, (long)dffa.getFinalFrequencies().getOrDefault(state, (long) 0));
+        	
+            freq.put(state, (double)dffa.getFinalFrequencies().getOrDefault(state, (double) 0));
             for (String symbol : dffa.getAlphabet()) {
                 String nextState = dffa.getTransitionFunction().get(state + symbol);
                 if (nextState != null) {
@@ -145,21 +124,28 @@ public class DPFA extends PFA {
 
         // Set initial probabilities
         for (String state : dffa.getStates()) {
-            long numerator = dffa.getInitialFrequencies().getOrDefault(state, (long)0);
-            long denominator = freq.get(state);
+            double numerator = dffa.getInitialFrequencies().getOrDefault(state, (double)0);
+            double denominator = freq.get(state);
             if(denominator==0)
             	denominator=1;
-            dpfa.setInitialProbability(state, new Fraction((int)numerator, (int)denominator));
+      
+            dpfa.setInitialProbability(state, new Fraction(numerator, denominator,4));
+
             
         }
 
         // Set final probabilities
         for (String state : dffa.getStates()) {
-            long numerator = dffa.getFinalFrequencies().getOrDefault(state,(long) 0);
-            long denominator = freq.get(state);
+        	dpfa.setFinalFrequency(state, 0);
+            double numerator = dffa.getFinalFrequencies().getOrDefault(state,(double) 0);
+            double denominator = freq.get(state);
             if (denominator==0)
             	denominator=1;
-            dpfa.setFinalProbability(state, new Fraction((int)numerator, (int)denominator));
+            try {
+            	dpfa.setFinalProbability(state, new Fraction(numerator, denominator,4));
+            }catch(Exception e) {
+            	dpfa.setFinalProbability(state,new Fraction(0));
+            }
         }
 
         // Set transition probabilities
@@ -167,17 +153,23 @@ public class DPFA extends PFA {
             for (String symbol : dffa.getAlphabet()) {
                 String nextState = dffa.getTransitionFunction().get(state + symbol);
                 if (nextState != null) {
-                    long numerator = dffa.getTransitionFrequencies().get(state).get(symbol).get(nextState);
-                    long denominator = freq.get(state);
+                    double numerator = dffa.getTransitionFrequencies().get(state).get(symbol).get(nextState);
+                    double denominator = freq.get(state);
                     if(denominator==0)
                     	denominator=1;
-                    dpfa.setTransitionProbability(state, symbol, nextState, new Fraction((int)numerator, (int)denominator));
+                    try {
+                    dpfa.setTransitionProbability(state, symbol, nextState, new Fraction(numerator, denominator,4));
+                    dpfa.setTransitionFrequency(state, symbol, state, denominator);
+                    }catch(Exception e) {
+                        dpfa.setTransitionProbability(state, symbol, nextState, new Fraction(0));
+
+                    }
                     dpfa.setTransitionFunction(state, symbol, nextState);
                 }
             }
-        }
+        }*/
 
-        return dpfa;
+        return dffa;
     }
     private static void setVertexPositions(mxGraph graph, Object parent) {
         int numVertices = graph.getChildVertices(parent).length;
@@ -243,4 +235,28 @@ public class DPFA extends PFA {
       
     	
     }
+    public  Map<String, Map<String, Map<String, Fraction>>> getTransitionProbabilities()
+    {
+    	return transitionProbabilities;
+    }
+    public void setInitialProbability(String state, Fraction probability) {
+        initialProbabilities.put(state, probability);
+    }
+
+    public void setFinalProbability(String state, Fraction probability) {
+        finalProbabilities.put(state, probability);
+    }
+    public Fraction getFinialProbeblity(String state)
+    {
+    	return finalProbabilities.get(state);
+    }
+    public Fraction getTransitionProbeblity(String source,String symbol,String destination) {
+    	return transitionProbabilities.get(source).get(symbol).get(destination);
+    }
+    public void setTransitionProbability(String fromState, String symbol, String toState, Fraction probability) {
+        transitionProbabilities.computeIfAbsent(fromState, k -> new HashMap<>())
+                .computeIfAbsent(symbol, k -> new HashMap<>())
+                .put(toState, probability);
+    }
+
 }

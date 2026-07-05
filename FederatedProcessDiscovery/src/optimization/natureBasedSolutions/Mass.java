@@ -2,11 +2,9 @@ package optimization.natureBasedSolutions;
 
 import java.util.HashMap;
 import java.util.Random;
-
-import org.apache.jena.base.Sys;
-
-import nodes.OptimizerEdgeNode;
+import nodes.Optimizer;
 import optimization.BasicObject;
+import performance.EntropicRelevanceCalculator.BackGroundType;
 
 class Mass  extends BasicObject{
     public double[] velocity;
@@ -15,16 +13,17 @@ class Mass  extends BasicObject{
     public double fitness;
     // Add other necessary fields and methods
 
-    public Mass(int id, HashMap<String, Long> eventLog, HashMap<String, Character> action) {
+    public Mass(int id, HashMap<String, Double> eventLog, HashMap<String, Character> action,double lower,double upper,BackGroundType bkgt) {
     	super();
-        this.velocity = new double[2];
-        this.acceleration = new double[2];
+        this.velocity = new double[3];
+        this.acceleration = new double[3];
         this.fitness =0;
-        setEdgeNode(new OptimizerEdgeNode(id,action.size(),eventLog));
+        setEdgeNode(new Optimizer(id,action.size(),eventLog,bkgt));
         // Initialize solution and velocity
         Random rand = new Random(System.currentTimeMillis());
-        this.solution[0] = 0.1 + (0.99 - 0.1) * rand.nextDouble();
-        this.solution[1] = 0.1 + (0.99 - 0.1) * rand.nextDouble();
+        solution[0] = 0.1 + (0.99 - 0.1) * rand.nextDouble();
+        solution[1] = 0.1 + (0.99 - 0.1) * rand.nextDouble();
+        solution[2] = rand.nextDouble(lower,upper);
     }
     
     // Add methods like getEdgeNode, etc., if needed

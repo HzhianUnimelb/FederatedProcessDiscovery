@@ -3,33 +3,36 @@ package optimization.evolutionBasedSolutions;
 import java.util.HashMap;
 import java.util.Random;
 
-import nodes.OptimizerEdgeNode;
+import nodes.Optimizer;
 import optimization.BasicObject;
+import performance.EntropicRelevanceCalculator.BackGroundType;
 
 class Individual extends BasicObject{
-    private OptimizerEdgeNode edgeNode;
+    private Optimizer edgeNode;
 
-    public Individual(int id,int actionSize, HashMap<String, Long> eventLog) {
+    public Individual(int id,int actionSize, HashMap<String, Double> eventLog,double lower,double upper,BackGroundType bkgt) {
         super();
-        Random rand = new Random();
-        edgeNode = new OptimizerEdgeNode(id,actionSize, eventLog);
+        Random rand = new Random(System.currentTimeMillis());
+        edgeNode = new Optimizer(id,actionSize, eventLog,bkgt);
+        
         // Initialize genes randomly
-        solution[0] = rand.nextDouble(0.1, 0.99);
-        solution[1] = rand.nextDouble(0.1, 1.0);
-        solution[2] = rand.nextDouble(0.08, 0.1);
+        solution[0] = rand.nextDouble(0.0000000001, 0.002);
+        solution[1] = rand.nextDouble(1, 100);
+        solution[2] = rand.nextDouble(lower,upper);
     }
 
     public Individual(Individual other) {
         this.solution = other.solution.clone();
         this.fitness = other.fitness;
         this.edgeNode = other.edgeNode;
+        this.metrics = other.metrics;
     }
     
-    public OptimizerEdgeNode getEdgeNode() {
+    public Optimizer getEdgeNode() {
 		return edgeNode;
 	}
 
-	public void setEdgeNode(OptimizerEdgeNode edgeNode) {
+	public void setEdgeNode(Optimizer edgeNode) {
 		this.edgeNode = edgeNode;
 	}
 
@@ -46,7 +49,7 @@ class Individual extends BasicObject{
         return fitness;
     }
 
-    public Individual[] crossover(Individual other) {
+    public Individual[] crossover(Individual other,double lower,double upper) {
         Individual offspring1 = new Individual(this);
         Individual offspring2 = new Individual(other);
 
@@ -63,8 +66,15 @@ class Individual extends BasicObject{
         }
         delta = (rand.nextDouble() - 0.5) * 0.01; 
         double temp = offspring1.solution[2];
-        offspring1.solution[2] = offspring2.solution[2] + delta;
-        offspring2.solution[2] = temp + delta;
+        if(offspring2.solution[2] + delta> upper || offspring2.solution[2] + delta<lower)
+        	offspring1.solution[2] = rand.nextDouble(lower,upper);
+        else
+        	offspring1.solution[2] = offspring2.solution[2] + delta;
+        if( temp + delta>upper ||  temp + delta<lower)
+        	  offspring2.solution[2] = rand.nextDouble(lower,upper);
+        else
+        	offspring2.solution[2] = temp + delta;
+        
         return new Individual[]{offspring1, offspring2};
     }
 

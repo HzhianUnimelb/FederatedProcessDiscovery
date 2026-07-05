@@ -2,18 +2,19 @@ package optimization.swarmBasedSolutions;
 
 import java.util.HashMap;
 
-import nodes.OptimizerEdgeNode;
+import nodes.Optimizer;
 import optimization.BasicObject;
+import performance.EntropicRelevanceCalculator.BackGroundType;
 
 
 public class FoodSource extends BasicObject {
     private int limit; // To keep track of abandonment
             
 
-    public FoodSource(double[] solution,int id, HashMap<String, Long> eventLog, HashMap<String, Character> action) {
+    public FoodSource(double[] solution,int id, HashMap<String, Double> eventLog, HashMap<String, Character> action,BackGroundType bkgt) {
     	this.solution = solution;
     	this.limit = 0;
-    	setEdgeNode(new OptimizerEdgeNode(id,action.size(),eventLog));
+    	setEdgeNode(new Optimizer(id,action.size(),eventLog,bkgt));
     }
     /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
 

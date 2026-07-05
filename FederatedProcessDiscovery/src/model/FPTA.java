@@ -18,6 +18,35 @@ public class FPTA extends DFFA {
         BLUE = new HashSet<>();
         RED.add(""); // add lambda to RED
         suspendedStates = new HashSet<>();
+        
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public void deleteState(FPTA copyfpta,String state) {
+    	for(String alpha:copyfpta.alphabet)
+    		if(copyfpta.getTransitionFunction().get(state+alpha)!=null)
+			{
+    			String next = copyfpta.getTransitionFunction().get(state+alpha);
+    			copyfpta.getTransitionFunction().remove(state+alpha);
+    			copyfpta.getTransitionFrequencies().get(state).get(alpha).remove(next);
+    			deleteState(copyfpta, next);
+			}
+    	copyfpta.getFinalFrequencies().remove(state);
+    	copyfpta.states.remove(state);
+    	for(String s : copyfpta.states)
+    		for(String alpha : copyfpta.alphabet)
+    			if(copyfpta.getTransitionFunction().get(s+alpha)!=null && copyfpta.getTransitionFunction().get(s+alpha).compareTo(state)==0)
+    			{
+    				
+    				copyfpta.getTransitionFunction().remove(s+alpha);
+    				try {
+    					copyfpta.getFinalFrequencies().put(s, copyfpta.getFinalFrequencies().get(s)+(copyfpta.getTransitionFrequencies().get(s).get(alpha).get(state)!=null?copyfpta.getTransitionFrequencies().get(s).get(alpha).get(state):0));
+    				}catch(Exception e)
+    				{
+    					copyfpta.getFinalFrequencies().put(s, copyfpta.getFinalFrequencies().get(s));
+    				}
+    					copyfpta.getTransitionFrequencies().get(s).get(alpha).remove(state);
+    			
+    			}
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public FPTA cloneFPTA() {
@@ -44,7 +73,19 @@ public class FPTA extends DFFA {
     	}
     	for(String state:transitionFrequencies.keySet())
     	{
-    		fpta.transitionFrequencies.put(state, transitionFrequencies.get(state));
+    		Map<String,Map<String,Double>>x = transitionFrequencies.get(state);
+    		for(String s:x.keySet())
+    		{
+    			Map<String,Double> y = x.get(s);
+    		//	System.out.println(state+" "+s+" "+y+" "+y.get(s));
+    			String next = transitionFunction.get(state+s);
+    			if(transitionFrequencies.get(state).get(s).get(next)==null)
+    			{
+    				fpta.getTransitionFunction().remove(state+s);
+    			}
+    			else
+    				fpta.setTransitionFrequency(state, s, transitionFunction.get(state+s), transitionFrequencies.get(state).get(s).get(next));
+    		}
     	}
     	for(String state:mergeState.keySet())
     		fpta.mergeState.put(state, mergeState.get(state));
@@ -52,8 +93,13 @@ public class FPTA extends DFFA {
     	return fpta;
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public void pruneUnvisited(FPTA fpta,HashMap<String, Double>  eventLog)
+    {
+    	
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public FPTA() {
-    	super();
+    	 super();
     	 RED = new HashSet<>();
          BLUE = new HashSet<>();
      	 alphabet = new HashSet<>();
@@ -61,15 +107,41 @@ public class FPTA extends DFFA {
          RED.add(""); // add lambda to RED
          suspendedStates = new HashSet<>();
     }
+    
+    
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public static FPTA constructFPTA(HashMap<String, Long> S) {
+    public static double isTraceCovered(FPTA model,String trace) {
+		String state="",state1="";
+		for(char c:trace.toCharArray())
+		{			
+			state1=state;
+			state = model.getTransitionFunction().get(state1+c);		
+			double val=0;
+			try {
+				val =model.getTransitionFrequencies().get(state1).get(c+"").get(state);
+			}catch(Exception e)
+			{
+				val=0;
+			}
+			if (state == null || val==0)
+			{
+				//System.out.println("not found-->"+trace);
+				return 0;
+			}
+		}
+		return 1;
+	}
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public static FPTA constructFPTA(HashMap<String, Double> S) {
         Set<String> alphabet = new HashSet<>();
         Set<String> states = new HashSet<>();
         long totalFrequency = 0;
+        int j =0;
         for (String text:S.keySet()) {
-           
+        	
             String str = text;
-            long frequency = S.get(text);
+            double frequency = S.get(text);
             totalFrequency += frequency;
             for (int i = 0; i <= str.length(); i++) {
                 states.add(str.substring(0, i));
@@ -81,9 +153,8 @@ public class FPTA extends DFFA {
         states.add(""); // add empty string to states
         FPTA fpta = new FPTA(states, alphabet);
         for (String text:S.keySet()) {
-        
             String str = text;
-            Long frequency = S.get(text);
+            double frequency = S.get(text);
          //   System.out.println(frequency+" "+text);
             for (int i = 0; i < str.length(); i++) {
                 String fromState = str.substring(0, i);
@@ -99,14 +170,21 @@ public class FPTA extends DFFA {
         return fpta;
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public Long getTransitionFrequency(String fromState, String symbol, String toState) {
+    public double getTransitionFrequency(String fromState, String symbol, String toState) {
         return transitionFrequencies.computeIfAbsent(fromState, k -> new HashMap<>())
                 .computeIfAbsent(symbol, k -> new HashMap<>())
-                .getOrDefault(toState, (long)0);
+                .getOrDefault(toState, (double)0);
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public Long getFinalFrequency(String state) {
-        return finalFrequencies.getOrDefault(state, (long)0);
+    public double getFinalFrequency(String state) {
+    	double x = 0;
+    	try {
+    		x = finalFrequencies.getOrDefault(state, (double)0);
+    	} catch(Exception e)
+    	{
+    		
+    	}
+        return x;
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     private static Object getVertex(mxGraph graph, Object parent, String vertexName) {
@@ -132,14 +210,14 @@ public class FPTA extends DFFA {
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public void merge(String q, String qPrime) {
-   
         for (String state : states) {
             for (String symbol : alphabet) {
                 if (getTransitionFunction().get(state + symbol) != null && getTransitionFunction().get(state + symbol).equals(qPrime)) {
-                    long n = getTransitionFrequency(state, symbol, qPrime);
+                    double n = getTransitionFrequency(state, symbol, qPrime);
                     setTransitionFunction(state, symbol, q);
                     setTransitionFrequency(state, symbol, q, n);
-                    setTransitionFrequency(state, symbol, qPrime, (long)0);
+                    setTransitionFrequency(state, symbol, qPrime, (double)0);
+                  //  System.out.println(state+" ("+symbol+") "+qPrime);
                     stochasticFold(q,qPrime);
                     //markSuspended(qPrime);
                     return;
@@ -148,19 +226,102 @@ public class FPTA extends DFFA {
         }  
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public void merge2(String q, String qPrime) {
+        for (String state : states) {
+            for (String symbol : alphabet) {
+                if (getTransitionFunction().get(state + symbol) != null && getTransitionFunction().get(state + symbol).equals(qPrime)) {
+                    double n = getTransitionFrequency(state, symbol, qPrime);
+                    setTransitionFunction(state, symbol, q);
+                    setTransitionFrequency(state, symbol, q, n);
+                    
+                    setTransitionFrequency(state, symbol, qPrime, (double)0);
+                   
+                    stochasticFold2(q,qPrime);
+                    //markSuspended(qPrime);
+                    return;
+                }
+            }
+        }  
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public void merge1(String q, String qPrime,List<String> merged) {
+    	 for (String state : states) {
+             for (String symbol : alphabet) {
+                 if (getTransitionFunction().get(state + symbol) != null && getTransitionFunction().get(state + symbol).equals(qPrime)) {
+                	 double n = getTransitionFrequency(state, symbol, qPrime);
+            		 setTransitionFunction(state, symbol, q);
+            		 setTransitionFrequency(state, symbol, q, n);
+                	 if(state.compareTo(q)!=0)
+                	 {	
+                		
+                		 setTransitionFrequency(state, symbol, qPrime, (double)0);                   	
+                	 }
+                	 stochasticFold1(q,qPrime,merged);
+            		 return;
+                     //markSuspended(qPrime);
+                     
+                 }
+             }
+         }  
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public FPTA stochasticFold(String q, String qPrime) {
         setFinalFrequency(q, getFinalFrequency(q) + getFinalFrequency(qPrime));
-      
+       
         for (String a : alphabet) {
             if (getTransitionFunction().get(qPrime + a) != null) {
                 if (getTransitionFunction().get(q + a) != null) {
+                //	System.out.println("ex ("+q+") "+a+" ("+qPrime+")");
                     String nextStateQ = getTransitionFunction().get(q + a);
                     String nextStateQPrime = getTransitionFunction().get(qPrime + a);
                     setTransitionFrequency(q, a, nextStateQ, getTransitionFrequency(q, a, nextStateQ) + getTransitionFrequency(qPrime, a, nextStateQPrime));
                 	mergeState.put(q,qPrime);
-                	if(getFinalFrequency(qPrime)!=null)
-                		setFinalFrequency(qPrime, (long)0);
+
+                	setFinalFrequency(qPrime, (long)0);
+                	
                     stochasticFold(nextStateQ, nextStateQPrime);
+                } else {
+
+                    setTransitionFunction(q, a,""+getTransitionFunction().get(qPrime + a));   
+                    double x = transitionFrequencies.get(qPrime).get(a).get(transitionFunction.get(qPrime+a));
+                    setTransitionFrequency(q, a, getTransitionFunction().get(qPrime + a), x);
+               //     double x1 = transitionFrequencies.get(q).get(a).get(transitionFunction.get(qPrime+a));
+                  //  System.out.println(q+" "+a+" "+getTransitionFunction().get(qPrime + a)+" "+x1);
+                }
+
+            }
+        }
+        markSuspended(qPrime);
+        return this;
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public FPTA stochasticFold2(String q, String qPrime) {
+       setFinalFrequency(q, getFinalFrequency(q) + getFinalFrequency(qPrime));
+        for (String a : alphabet) {
+            if (transitionFunction.get(qPrime + a) != null) {
+                if (transitionFunction.get(q + a) != null) {
+                    String nextStateQ = transitionFunction.get(q + a);
+                    String nextStateQPrime = transitionFunction.get(qPrime + a);
+                    setTransitionFrequency(q, a, nextStateQ, getTransitionFrequency(q, a, nextStateQ) + getTransitionFrequency(qPrime, a, nextStateQPrime));
+                	for(String state:states)
+                			if(transitionFunction.containsKey(state+a))
+                			{
+                				String next = transitionFunction.get(state+a);
+                				if(next.compareTo(nextStateQPrime)==0)
+                				{
+                					transitionFunction.remove(state+a);
+                					transitionFunction.put(state+a, nextStateQPrime);
+                					
+                					double n =transitionFrequencies.get(state).get(a).get(nextStateQPrime)!=null?transitionFrequencies.get(state).get(a).get(nextStateQPrime):0;
+                					transitionFrequencies.get(state).get(a).remove(nextStateQPrime);
+                					setTransitionFrequency(state, a, nextStateQ, n);
+                				}
+                			}
+                    if(q.compareTo(qPrime)!=0)
+                		mergeState.put(q,qPrime);
+                	transitionFunction.remove(qPrime+a);
+                	setFinalFrequency(qPrime, (long)0);
+                    stochasticFold2(nextStateQ, nextStateQPrime);
                 } else {
                     setTransitionFunction(q, a,""+getTransitionFunction().get(qPrime + a));   
                     setTransitionFrequency(q, a, getTransitionFunction().get(qPrime + a), getTransitionFrequency(qPrime, a, getTransitionFunction().get(qPrime + a)));
@@ -168,6 +329,34 @@ public class FPTA extends DFFA {
 
             }
         }
+        if(q.compareTo(qPrime)!=0)
+        	markSuspended(qPrime);
+        return this;
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public FPTA stochasticFold1(String q, String qPrime,List<String> merged) {
+    	merged.add(qPrime);
+    	System.out.println(q+" fold "+qPrime);
+        for (String a : alphabet) {
+            if (getTransitionFunction().get(qPrime + a) != null) {
+                String nextStateQPrime = getTransitionFunction().get(qPrime + a);
+                if (getTransitionFunction().get(q + a) != null) {
+                    String nextStateQ = getTransitionFunction().get(q + a);
+                    setTransitionFrequency(q, a, nextStateQ, getTransitionFrequency(q, a, nextStateQ) + getTransitionFrequency(qPrime, a, nextStateQPrime));
+      /*          	mergeState.put(q,qPrime);
+                	mergeState.put(q,nextStateQ);*/
+                	 markSuspended(nextStateQPrime);
+                //	setFinalFrequency(qPrime, (long)0);
+                
+                    stochasticFold1(nextStateQ, nextStateQPrime,merged);
+                } else {
+                    setTransitionFunction(q, a,""+getTransitionFunction().get(qPrime + a));   
+                    setTransitionFrequency(q, a, nextStateQPrime, getTransitionFrequency(qPrime, a, nextStateQPrime));
+                }
+
+            }
+        }
+        setFinalFrequency(q, getFinalFrequency(q) + getFinalFrequency(qPrime));
         markSuspended(qPrime);
         return this;
     }
@@ -185,9 +374,59 @@ public class FPTA extends DFFA {
        
        suspendedStates.clear();
     }
+    
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+
+    public void removeSuspendedStates1() {
+    	
+    	
+        states.removeAll(suspendedStates);
+      //  for(String s:suspendedStates)
+      //  	System.out.println("Removed--->"+s);
+         //transitionFunction.keySet().removeAll(suspendedStates);
+       BLUE.removeAll(suspendedStates);
+       RED.removeAll(suspendedStates);
+        suspendedStates.clear();
+     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public void statePromote(String qu) {
-        RED.add(qu);        
+        RED.add(qu);     
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public void changeColor1(List<String> merged)
+    {
+    	for (String a : alphabet) {
+    		for(String qu:RED)
+    			if (transitionFunction.get(qu + a)!=null) {
+    				if(!BLUE.contains(transitionFunction.get(qu + a))&& !RED.contains(transitionFunction.get(qu + a)))
+    					if(!merged.contains(transitionFunction.get(qu + a)))
+    						BLUE.add(transitionFunction.get(qu + a));
+    			}
+        }
+    	List<String> stringList = new ArrayList<>(BLUE);
+    	BLUE=sortList(BLUE);
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public Set<String> sortList(Set<String> list) {
+        List<String> sortedList = new ArrayList<>(list);
+      //  sortedList.sort(Comparator
+      //      .comparingInt(String::length)
+     //       .thenComparing(Comparator.naturalOrder()));
+        return new LinkedHashSet<>(sortedList);
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public void changeColor(String qr)
+    {
+    	for (String a : alphabet) {
+    			if (transitionFunction.get(qr + a)!=null) {
+    				System.out.println(qr+")("+a+")("+transitionFunction.get(qr + a));
+    				if(!BLUE.contains(transitionFunction.get(qr + a))&& !RED.contains(transitionFunction.get(qr + a)))
+    					if(!mergeState.containsKey(transitionFunction.get(qr + a)))
+    					BLUE.add(transitionFunction.get(qr + a));
+
+    			}
+    	}
+        LexLengthSort();
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public void changeColor()
@@ -196,11 +435,21 @@ public class FPTA extends DFFA {
     		for(String qu:RED)
     			if (transitionFunction.get(qu + a)!=null) {
     				if(!BLUE.contains(transitionFunction.get(qu + a))&& !RED.contains(transitionFunction.get(qu + a)))
-    					if(!mergeState.containsKey(transitionFunction.get(qu + a)))
+    				{
+        				if(!IsMerged(transitionFunction.get(qu + a)))
     					BLUE.add(transitionFunction.get(qu + a));
+    				}
     			}
         }
+    	
         LexLengthSort();
+    }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public boolean IsMerged(String s) {
+    	for(String ss:mergeState.keySet())
+    		if(mergeState.get(ss).compareTo(s)==0)
+    			return true;
+    	return false;
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
     public void LexLengthSort()
@@ -213,12 +462,12 @@ public class FPTA extends DFFA {
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
 
     public static void main(String[] args) {
-    	HashMap<String, Long> log = new HashMap<String,Long>() ;
-     	log.put("",  (long)10);
-     	log.put("a",  (long)27);
+    	HashMap<String, Double> log = new HashMap<String,Double>() ;
+     	log.put("",  10.0);
+     /*	log.put("a",  (long)27);
      	log.put("aa",  (long)20);
      	log.put("aaa",  (long)20);
-     	log.put("b",  (long)10);
+     	log.put("b",  (long)10);*/
     	/*log.put("a",  (long)27);
     	log.put("b",  (long)10);
     	log.put("aa",  (long)1);
@@ -232,15 +481,14 @@ public class FPTA extends DFFA {
     	x.setFilterring(30);
     	x.run();
     	FPTA model = x.returnFPTA();
-    	model.show(model, "DFFA1");
     	/*************************************************/
-    	HashMap<String, Long> log1 = new HashMap<String,Long>() ;
-    	log1.put("",  (long)10);
-    	log1.put("a",  (long)27);
-    	log1.put("b",  (long)10);
-    	log1.put("aa",  (long)1);
-    	log1.put("aaa",  (long)20);
-    	log1.put("aaaa",  (long)10);
+    	HashMap<String, Double> log1 = new HashMap<String,Double>() ;
+    	log1.put("",  10.0);
+    	log1.put("a",  27.0);
+    	log1.put("b",  10.0);
+    	log1.put("aa",  1.0);
+    	log1.put("aaa",  20.0);
+    	log1.put("aaaa",  10.0);
         FPTA fpta1 = FPTA.constructFPTA(log1);	
     	ALERGIA x1 = new ALERGIA(fpta1);
     	x1.setAlpha(0.5);
@@ -248,9 +496,7 @@ public class FPTA extends DFFA {
     	x1.run();
     	fpta1 = x1.getFpta();
     	FPTA model1 = x1.returnFPTA();
-    	model.show(model1, "DFFA2");
-    	FPTA merge = x.alphaStochasticFold(model, model1, 4);
-    	merge.show(merge, "Merged");
+    	FPTA merge = ALERGIA.alphaStochasticFold(model, model1, 4);
     /*	FPTA tree = new FPTA();
     	Map<String, Long> stateCount = new HashMap<String, Long>();
     	stateCount.put("", 1L);
@@ -397,14 +643,14 @@ public class FPTA extends DFFA {
     	return result;
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public void realRebalance(FPTA dffa1,String q,FPTA dffa2,String qprime,long incoming) {
+    public void realRebalance(FPTA dffa1,String q,FPTA dffa2,String qprime,double incoming) {
     	long x = calculateOutcommingArcs(dffa1,q,0);
     	long x1 =0;
     	for(String symbol:dffa1.alphabet)
     	{
     		if(dffa1.getTransitionFunction().get(q + symbol)!=null)
     		{		
-    			long t = dffa1.getTransitionFrequencies().get(q).get(symbol).get(dffa1.getTransitionFunction().get(q + symbol));
+    			double t = dffa1.getTransitionFrequencies().get(q).get(symbol).get(dffa1.getTransitionFunction().get(q + symbol));
     			
     			if(dffa2.getTransitionFunction().get(qprime+symbol)!=null)
     			{
@@ -420,17 +666,16 @@ public class FPTA extends DFFA {
     		System.out.println("income -->"+incoming);
     		for(String symbol:dffa1.alphabet)
         	{
-    			long t = dffa1.getTransitionFrequencies().get(q).get(symbol).get(dffa1.getTransitionFunction().get(q + symbol));
+    			double t = dffa1.getTransitionFrequencies().get(q).get(symbol).get(dffa1.getTransitionFunction().get(q + symbol));
         		if(dffa1.getTransitionFunction().get(q + symbol)!=null)
         		{		
-        			System.out.println(q+" "+symbol+" "+t+" "+x+" "+((t*incoming)/x)+" "+qprime+" "+dffa2.getTransitionFunction().get(qprime+symbol));
         		}
         	}
         }
     	dffa2.setFinalFrequency(qprime, incoming-x1); 	
     }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public void removeZeroLink(FPTA dffa1,String q) {
+    public static void removeZeroLink(FPTA dffa1,String q) {
     	for(String symbol:dffa1.alphabet)
     	{
     		if(dffa1.getTransitionFunction().get(q + symbol)!=null)
@@ -445,4 +690,5 @@ public class FPTA extends DFFA {
     		}
     	}
     }
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
 }

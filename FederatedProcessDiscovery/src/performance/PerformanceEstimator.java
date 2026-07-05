@@ -1,9 +1,11 @@
 package performance;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
 import model.FPTA;
+import performance.EntropicRelevanceCalculator.BackGroundType;
 
 public class PerformanceEstimator {
 
@@ -12,32 +14,50 @@ public class PerformanceEstimator {
     private HashMap<String,Double>performanceMetric;
     private double upperBoundSize;
     private double UnpperBoundEntropicRelevance;
-    public PerformanceEstimator(FPTA fpta, HashMap<String, Long> eventLog,int actionList) {
+    public PerformanceEstimator(FPTA fpta, HashMap<String, Double> eventLog,int actionList,BackGroundType bkgt) {
     	performanceMetric = new HashMap<String, Double>();
-    	performanceMetric.put("Fitness", 0.0);
+    //	performanceMetric.put("Fitness", 0.0);
     	performanceMetric.put("Entropic Relevance", 0.0);
     	performanceMetric.put("Size", 0.0);
+    //	performanceMetric.put("Precision", 0.0);
     	performanceAnalyser = new PerformanceAnalyser();
-    	entropicRelevanceCalculator = new EntropicRelevanceCalculator();
+    	entropicRelevanceCalculator = new EntropicRelevanceCalculator(bkgt);
     	setUpperBoundValues(fpta,eventLog,actionList);
     }
+	public PerformanceEstimator(BackGroundType bkgt) {
+		performanceMetric = new HashMap<String, Double>();
+   // 	performanceMetric.put("Fitness", 0.0);
+    	performanceMetric.put("Entropic Relevance", 0.0);
+    	performanceMetric.put("Size", 0.0);
+   // 	performanceMetric.put("Precision", 0.0);
+    	performanceAnalyser = new PerformanceAnalyser();
+    	entropicRelevanceCalculator = new EntropicRelevanceCalculator(bkgt);
+	}
 	/*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public void setUpperBoundValues(FPTA model, HashMap<String, Long> eventLog, int actionSize) {
+    public void setUpperBoundValues(FPTA model, HashMap<String, Double> eventLog, int actionSize) {
     	setUpperBoundSize(performanceAnalyser.calculateSize(model));
     	setUnpperBoundEntropicRelevance(entropicRelevanceCalculator.calculateEntropic(new FPTA(), eventLog, actionSize));	
     }
 	/*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
-    public HashMap<String,Double> calculatePerformanceMetrics(FPTA model, HashMap<String, Long> eventLog,int actionSize) {
-    	performanceMetric.put("Fitness", performanceAnalyser.calculateFitness1(model, eventLog));
-    //	System.out.println("Fitness-->"+performanceAnalyser.calculateFitness1(model, eventLog));
+    public HashMap<String,Double> calculatePerformanceMetrics(FPTA model, HashMap<String, Double> eventLog,int actionSize) {
+
     	performanceMetric.put("Entropic Relevance", entropicRelevanceCalculator.calculateEntropic(model, eventLog, actionSize));
-    	//System.out.println(entropicRelevanceCalculator.calculateEntropic(model, eventLog, actionSize)+" ER");
-    	entropicRelevanceCalculator.calculateEntropic(model, eventLog, actionSize);
+    //	performanceMetric.put("Entropic Relevance",0.1);
     	performanceMetric.put("Size",(double)performanceAnalyser.calculateSize(model));
-    	//model.show(model, "sss");
     	return performanceMetric;
     }
     
+    /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
+    public HashMap<String,Double> calculatePerformanceDFGMetrics(FPTA model, HashMap<String, Double> eventLog,int actionSize) {
+    //	performanceMetric.put("Fitness", performanceAnalyser.calculateDFGFitness1(model, eventLog));
+    //	System.out.println("Fitness-->"+performanceAnalyser.calculateFitness1(model, eventLog));
+    	performanceMetric.put("Entropic Relevance", entropicRelevanceCalculator.calculateDFGEntropic(model, eventLog, actionSize,model.states.contains("")!=false?"":"I"));
+    	//System.out.println(entropicRelevanceCalculator.calculateEntropic(model, eventLog, actionSize)+" ER");
+    	performanceMetric.put("Size",(double)performanceAnalyser.calculateSize(model));
+    //	performanceMetric.put("Precision", performanceAnalyser.calculatePercision(model, eventLog));
+    	//model.show(model, "sss");
+    	return performanceMetric;
+    }
     /*+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-*/
 
 	public static void main(String[] args) {

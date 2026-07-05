@@ -1,10 +1,10 @@
 package optimization;
 
-import nodes.OptimizerEdgeNode;
+import nodes.Optimizer;
 
 public class BasicObject {
 
-    protected OptimizerEdgeNode edgeNode;
+    protected Optimizer edgeNode;
     protected double fitness;
     protected double metrics[];
     public double[] solution;
@@ -20,11 +20,11 @@ public class BasicObject {
 
 	}
     /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/	
-	public OptimizerEdgeNode getEdgeNode() {
+	public Optimizer getEdgeNode() {
 		return edgeNode;
 	}
     /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-	public void setEdgeNode(OptimizerEdgeNode edgeNode) {
+	public void setEdgeNode(Optimizer edgeNode) {
 		this.edgeNode = edgeNode;
 	}
     /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/

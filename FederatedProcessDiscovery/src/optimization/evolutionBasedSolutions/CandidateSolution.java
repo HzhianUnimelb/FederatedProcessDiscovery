@@ -3,19 +3,30 @@ package optimization.evolutionBasedSolutions;
 import java.util.HashMap;
 import java.util.Random;
 
-import nodes.OptimizerEdgeNode;
+import nodes.Optimizer;
 import optimization.BasicObject;
+import performance.EntropicRelevanceCalculator.BackGroundType;
 
 public class CandidateSolution extends BasicObject{
-    public CandidateSolution(int id,int actionSize, HashMap<String, Long> eventLog) {
-        this.solution = new double[2];
+    public CandidateSolution(int id,int actionSize, HashMap<String, Double> eventLog,double lower,double upper,BackGroundType bkgt) {
         Random rand = new Random(System.currentTimeMillis());
-        edgeNode = new OptimizerEdgeNode(id,actionSize, eventLog);
+        edgeNode = new Optimizer(id,actionSize, eventLog,bkgt);
         // Initialize genes randomly
-        solution[0] = rand.nextDouble(0.1, 0.99);
+        solution[0] = rand.nextDouble(0.000001, 0.99);
         solution[1] = rand.nextDouble(0.1, 1.0);
+      
+        double random = new Random().nextDouble();
+        double result = lower + (random * (upper - lower));
+       // solution[2] = rand.nextDouble(lower,upper);
+        solution[2]= result;
     }
-    public CandidateSolution(OptimizerEdgeNode edgeNode,double[] position) {
+    public CandidateSolution(int id,int actionSize, HashMap<String, Double> eventLog,double so[],BackGroundType bkgt) 
+    	{
+    		 edgeNode = new Optimizer(id,actionSize, eventLog,bkgt);
+    	        // Initialize genes randomly
+    	     this.solution = so;
+    	}
+    public CandidateSolution(Optimizer edgeNode,double[] position) {
     	this.edgeNode = edgeNode;
     	solution = position;
     }

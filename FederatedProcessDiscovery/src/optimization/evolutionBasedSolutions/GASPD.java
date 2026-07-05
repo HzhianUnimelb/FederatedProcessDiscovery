@@ -18,15 +18,16 @@ import optimization.Optimization;
 import performance.EntropicRelevanceCalculator.BackGroundType;
 import performance.PerformanceAnalyser;
 
-public class Genetic extends Optimization {
+public class GASPD extends Optimization {
 
     private double crossoverRate;
     private double mutationRate;
     private List<Individual> population;
     private BackGroundType bkgt;
     FileWriter populationFWiter, frontierWriter;
+    double cof;
     /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-    public Genetic(int id, int maxGenerations,String fileDirectory, int size , double crossoverRate, double mutationRate,double lower,double upper,int Frontier_List_Size,LocalDateTime time,int seconds,HashMap<String, Character> actions,HashMap<String, Double> eventLog,int actionSize,BackGroundType bkgt,String optModel,int sizeLimit,double cof) {
+    public GASPD(int id, int maxGenerations,String fileDirectory, int size , double crossoverRate, double mutationRate,double lower,double upper,int Frontier_List_Size,LocalDateTime time,int seconds,HashMap<String, Character> actions,HashMap<String, Double> eventLog,int actionSize,BackGroundType bkgt,String optModel,int sizeLimit,double cof) {
         super(id,size, fileDirectory,maxGenerations,lower,upper,Frontier_List_Size,time,seconds,actions,eventLog,actionSize,optModel,sizeLimit,cof);
         this.bkgt=bkgt;
         this.crossoverRate = crossoverRate;
@@ -40,7 +41,7 @@ public class Genetic extends Optimization {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    
+    this.cof = cof;
     }
     /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
     public void initializePopulation() {
@@ -60,7 +61,7 @@ public class Genetic extends Optimization {
              //  System.out.println(" node    fitness[0]("+fitness[0]+") fitness[1]("+fitness[1]+")"+" "+genum.solution[0]+" "+genum.solution[1]+" "+genum.solution[2]);
                 Individual temp = new Individual(genum);
                 	population1.add(temp);
-                    if (0.5*(30/fitness[0]) + 0.5*(1/fitness[1])> globalBestValue) {
+                    if ((cof/fitness[0]) + ((1-cof)/fitness[1])> globalBestValue) {
                //     	System.out.println(fitness[0]+" "+globalBestValue);
                      //   setBestModel(genum.getEdgeNode().getCurrentFPTA().cloneFPTA());
                       
