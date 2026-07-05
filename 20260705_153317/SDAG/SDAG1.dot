@@ -1,0 +1,24 @@
+{
+  "initialState": I,
+  "finalState": O,
+  "nodes": [
+  { "label":"A", "id": "A1"},
+  { "label":"I", "id": "I"},
+  { "label":"F", "id": "F1"},
+  { "label":"E", "id": "E1"},
+  { "label":"D", "id": "D1"},
+  { "label":"C", "id": "C1"},
+  { "label":"O", "id": "O"},
+  { "label":"B", "id": "B1"}
+  ],
+  "transitions": [
+  {"from":A1,"to":B1,"label":"B","frequency":16660.595},
+  {"from":A1,"to":O,"label":"O","frequency":11340.405},
+  {"from":I,"to":A1,"label":"A","frequency":28001.0},
+  {"from":F1,"to":O,"label":"O","frequency":16660.595},
+  {"from":E1,"to":F1,"label":"F","frequency":16660.595},
+  {"from":D1,"to":E1,"label":"E","frequency":16660.595},
+  {"from":C1,"to":D1,"label":"D","frequency":16660.595},
+  {"from":B1,"to":C1,"label":"C","frequency":16660.595}
+  ]
+}

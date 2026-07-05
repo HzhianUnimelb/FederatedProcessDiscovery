@@ -1,0 +1,20 @@
+{
+  "initialState": λ,
+  "nodes": [
+  { "label":"λ", "initial frequency": 28001.0, "final frequency": 0.0},
+  { "label":"A", "initial frequency": 0.0, "final frequency": 11351.0},
+  { "label":"AB", "initial frequency": 0.0, "final frequency": 0.0},
+  { "label":"ABCDE", "initial frequency": 0.0, "final frequency": 0.0},
+  { "label":"ABC", "initial frequency": 0.0, "final frequency": 0.0},
+  { "label":"ABCD", "initial frequency": 0.0, "final frequency": 0.0},
+  { "label":"ABCDEF", "initial frequency": 0.0, "final frequency": 16650.0}
+  ],
+  "transitions": [
+  {"from":λ,"to":A,"label":"A","frequency":28001.0},
+  {"from":A,"to":AB,"label":"B","frequency":16650.0},
+  {"from":AB,"to":ABC,"label":"C","frequency":16650.0},
+  {"from":ABCDE,"to":ABCDEF,"label":"F","frequency":16650.0},
+  {"from":ABC,"to":ABCD,"label":"D","frequency":16650.0},
+  {"from":ABCD,"to":ABCDE,"label":"E","frequency":16650.0}
+  ]
+}

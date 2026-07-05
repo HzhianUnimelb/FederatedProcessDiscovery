@@ -1,0 +1,14 @@
+{
+  "initialState": I, 
+  "finalState": O, 
+  "transitions": [
+  {"from":A,"to":B,"label":"B","frequency":16660.595},
+  {"from":A,"to":O,"label":"O","frequency":11340.405},
+  {"from":B,"to":C,"label":"C","frequency":16660.595},
+  {"from":C,"to":D,"label":"D","frequency":16660.595},
+  {"from":D,"to":E,"label":"E","frequency":16660.595},
+  {"from":E,"to":F,"label":"F","frequency":16660.595},
+  {"from":F,"to":O,"label":"O","frequency":16660.595},
+  {"from":I,"to":A,"label":"A","frequency":28001.0}
+  ]
+}
